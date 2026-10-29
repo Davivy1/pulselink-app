@@ -26,4 +26,25 @@
     color: #FFFFFF;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   }
+
+  /* Donor App Light Mode Theme Overrides */
+.theme-light {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+}
+
+.theme-light .donor-card {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+.theme-light .donor-text-muted {
+  color: #64748B !important;
+}
+
+.theme-light .donor-header {
+  background-color: #FFFFFF !important;
+  border-color: #d4dae2 !important;
+}
 }

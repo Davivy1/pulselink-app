@@ -1,67 +1,91 @@
 import { create } from 'zustand';
-import { EmergencyStore } from '@/types';
 
+// 1. Export the AlertData Interface
+export interface AlertData {
+  alertId?: string;
+  hospitalId: string;
+  hospitalName: string;
+  bloodType: string;
+  units: number;
+  urgency: 'CRITICAL' | 'HIGH' | 'NORMAL';
+  radiusKm: number;
+  status: 'DISPATCHED' | 'ACCEPTED' | 'EN_ROUTE' | 'FULFILLED';
+  acceptedDonorId?: string;
+  acceptedDonorName?: string;
+  checkInToken?: string;
+  createdAt?: string;
+}
+
+// 2. Define the Store State Interface
+interface EmergencyStore {
+  activeAlert: AlertData | null;
+  dispatchAlert: (alertData: Omit<AlertData, 'status'>) => void;
+  acceptAlert: (donorId: string, donorName: string) => void;
+  verifyQrCode: (token: string) => boolean;
+  resetStore: () => void;
+}
+
+// 3. Initial State
+const initialAlertState: AlertData = {
+  alertId: 'PL-ALERT-101',
+  hospitalId: 'H101',
+  hospitalName: 'Federal Medical Centre Owerri',
+  bloodType: 'O-',
+  units: 2,
+  urgency: 'CRITICAL',
+  radiusKm: 5,
+  status: 'DISPATCHED',
+  checkInToken: 'PL-8890',
+  createdAt: new Date().toISOString(),
+};
+
+// 4. Create the Zustand Store
+// Set activeAlert to null by default so the donor page opens on the idle dashboard
 export const useEmergencyStore = create<EmergencyStore>((set, get) => ({
-  activeAlert: null,
-  fulfillment: null,
-  socketConnected: false,
+  activeAlert: null, // <--- CHANGE THIS FROM initialAlertState TO null
 
-  dispatchAlert: (payload) => {
-    const newAlert = {
-      ...payload,
-      alertId: `PL-ALERT-${Math.floor(1000 + Math.random() * 9000)}`,
-      status: 'DISPATCHED' as const,
-      createdAt: new Date().toISOString(),
-    };
-    
-    // Save locally for pitch fail-safe
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('pulselink_active_alert', JSON.stringify(newAlert));
-    }
-
-    set({ activeAlert: newAlert, fulfillment: null });
+  dispatchAlert: (data) => {
+    set({
+      activeAlert: {
+        ...data,
+        alertId: `PL-ALERT-${Math.floor(100 + Math.random() * 900)}`,
+        status: 'DISPATCHED',
+        checkInToken: 'PL-8890',
+        createdAt: new Date().toISOString(),
+      },
+    });
   },
 
-  acceptDispatch: (alertId, donorId) => {
-    const currentAlert = get().activeAlert;
-    if (!currentAlert) return;
+  acceptAlert: (donorId: string, donorName: string) => {
+    const current = get().activeAlert;
+    if (!current) return;
 
-    const updatedAlert = { ...currentAlert, status: 'ACCEPTED' as const };
-    const newFulfillment = {
-      donorId,
-      donorName: 'John Doe',
-      donorEta: '12 mins',
-      qrCode: `PL-TOKEN-${Math.floor(1000 + Math.random() * 9000)}`,
-    };
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('pulselink_active_alert', JSON.stringify(updatedAlert));
-      localStorage.setItem('pulselink_fulfillment', JSON.stringify(newFulfillment));
-    }
-
-    set({ activeAlert: updatedAlert, fulfillment: newFulfillment });
+    set({
+      activeAlert: {
+        ...current,
+        status: 'ACCEPTED',
+        acceptedDonorId: donorId,
+        acceptedDonorName: donorName,
+      },
+    });
   },
 
-  verifyQrCode: (qrCode) => {
-    const { fulfillment, activeAlert } = get();
-    if (fulfillment?.qrCode === qrCode || qrCode === 'PL-8890') {
-      const fulfilledAlert = activeAlert ? { ...activeAlert, status: 'FULFILLED' as const } : null;
-      
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('pulselink_active_alert', JSON.stringify(fulfilledAlert));
-      }
+  verifyQrCode: (token: string) => {
+  const current = get().activeAlert;
+  if (current) {
+    set({
+      activeAlert: {
+        ...current,
+        status: 'FULFILLED', // <--- Updates global store status
+      },
+    });
+    return true;
+  }
+  return false;
+},
 
-      set({ activeAlert: fulfilledAlert });
-      return true;
-    }
-    return false;
-  },
-
-  resetState: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('pulselink_active_alert');
-      localStorage.removeItem('pulselink_fulfillment');
-    }
-    set({ activeAlert: null, fulfillment: null });
+  // Added resetStore implementation to fix the TypeScript error
+  resetStore: () => {
+    set({ activeAlert: null });
   },
 }));
