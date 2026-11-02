@@ -17,22 +17,18 @@ import {
   Moon, 
   Trophy, 
   Activity,
-  MapPin,
-  CheckCircle2
+  MapPin
 } from 'lucide-react';
 
 export default function DonorMobileView() {
   const router = useRouter();
   const { activeAlert, acceptAlert, dispatchAlert, fetchActiveAlert } = useEmergencyStore();
 
-  // Local Theme State (Isolated for Donor App)
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(180);
 
-  // Timer State (3 Minute Countdown)
-  const [secondsLeft, setSecondsLeft] = useState(60);
-
-  // Poll backend for cross-device/cross-tab dispatch synchronization
+  // Poll backend every 2.5 seconds for cross-device synchronization
   useEffect(() => {
     fetchActiveAlert();
 
@@ -53,21 +49,18 @@ export default function DonorMobileView() {
     return () => clearInterval(interval);
   }, [activeAlert]);
 
-  // Format seconds into MM:SS
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
     const remainingSecs = secs % 60;
     return `${mins.toString().padStart(2, '0')}:${remainingSecs.toString().padStart(2, '0')}`;
   };
 
-  // Accept Dispatch Handler
   const handleAccept = () => {
     acceptAlert('D502', 'John Doe');
     const alertId = activeAlert?.alertId || 'PL-ALERT-101';
     router.push(`/tracking/${alertId}`);
   };
 
-  // Pitch Demo Trigger Handler
   const handleSimulateBroadcast = () => {
     dispatchAlert({
       hospitalId: 'H101',
@@ -80,12 +73,11 @@ export default function DonorMobileView() {
     setSecondsLeft(180);
   };
 
-  // Map hospital dispatch radius to simulated donor proximity for the pitch demo
   const simulatedDistancesByRadius: Record<number, string> = {
-       3: '1.8 km away',
-       5: '3.2 km away',
-       10: '7.4 km away',
-    };
+    3: '1.8 km away',
+    5: '3.2 km away',
+    10: '7.4 km away',
+  };
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${isDarkMode ? 'bg-pulselink-navy text-white' : 'bg-slate-100 text-slate-900'}`}>
@@ -94,7 +86,6 @@ export default function DonorMobileView() {
       <header className={`sticky top-0 z-40 w-full border-b backdrop-blur-md px-4 sm:px-8 py-3 ${isDarkMode ? 'bg-pulselink-surface/90 border-pulselink-border' : 'bg-white/90 border-slate-200'}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
-          {/* Brand Identity */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-pulselink-navy border border-pulselink-crimson/30 shadow-pulse-glow transition-all group-hover:border-pulselink-crimson">
               <span className="absolute inset-0 rounded-xl bg-pulselink-crimson/20 animate-pulse pointer-events-none" />
@@ -121,10 +112,7 @@ export default function DonorMobileView() {
             </div>
           </Link>
 
-          {/* Action Controls: Theme Toggle + Switcher + Exit */}
           <div className="flex items-center gap-2.5">
-            
-            {/* Sun/Moon Light-Dark Mode Toggle */}
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={`p-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${isDarkMode ? 'bg-pulselink-navy border-pulselink-border text-amber-400 hover:text-amber-300' : 'bg-slate-100 border-slate-300 text-indigo-600 hover:bg-slate-200'}`}
@@ -133,7 +121,6 @@ export default function DonorMobileView() {
               {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            {/* Portal Switcher Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -173,7 +160,6 @@ export default function DonorMobileView() {
               )}
             </div>
 
-            {/* Exit Workspace CTA */}
             <Link
               href="/"
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-pulselink-crimson/15 hover:bg-pulselink-crimson/25 text-pulselink-crimson border border-pulselink-crimson/30 text-xs font-bold transition-all"
@@ -187,11 +173,11 @@ export default function DonorMobileView() {
         </div>
       </header>
 
-      {/* Main Viewport Container (Centered frame on desktop, full height on mobile) */}
+      {/* Main Viewport Container */}
       <main className="min-h-screen sm:min-h-dvh bg-pulselink-navy flex justify-center items-center sm:py-6">
         
         {/* Phone Container */}
-        <div className={`w-full max-w-md min-h-screen sm:min-h-195 sm:max-h-205 shadow-2xl flex flex-col justify-between overflow-hidden relative transition-colors duration-300 ${
+        <div className={`w-full max-w-md min-h-screen sm:min-h-[780px] sm:max-h-[820px] shadow-2xl flex flex-col justify-between overflow-hidden relative transition-colors duration-300 ${
           isDarkMode 
             ? 'bg-pulselink-surface sm:rounded-[36px] sm:border-8 sm:border-slate-800' 
             : 'bg-slate-50 sm:rounded-[36px] sm:border-8 sm:border-slate-300'
@@ -220,7 +206,7 @@ export default function DonorMobileView() {
             </div>
           </header>
 
-          {/* Scrollable Screen Content (Takes up all remaining space tightly) */}
+          {/* Scrollable Screen Content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             
             {/* Donor Status Card */}
@@ -294,12 +280,11 @@ export default function DonorMobileView() {
             </Link>
           </nav>
 
-          {/* Incoming High-Urgency Emergency Alert Modal */}
+          {/* Incoming Emergency Alert Modal */}
           {activeAlert && activeAlert.status === 'DISPATCHED' && (
             <div className="absolute inset-0 z-50 bg-slate-950/85 backdrop-blur-md p-4 flex flex-col justify-end animate-in slide-in-from-bottom-5">
               <div className="w-full rounded-3xl bg-pulselink-surface border-2 border-pulselink-crimson p-4 space-y-3.5 shadow-pulse-glow">
                 
-                {/* Alert Header */}
                 <div className="flex items-center justify-between border-b border-pulselink-border pb-2.5">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-pulselink-crimson/20 text-pulselink-crimson text-[10px] font-extrabold uppercase tracking-wider animate-pulse">
                     <Zap className="w-3.5 h-3.5" />
@@ -312,13 +297,11 @@ export default function DonorMobileView() {
                   </span>
                 </div>
 
-                {/* Hospital Details */}
                 <div className="space-y-0.5">
                   <h3 className="text-sm font-extrabold text-white">{activeAlert.hospitalName}</h3>
                   <p className="text-[11px] text-slate-400">Emergency Surgery Unit • Owerri</p>
                 </div>
 
-                {/* Target Match Specs */}
                 <div className="grid grid-cols-2 gap-2.5 p-2.5 rounded-xl bg-pulselink-navy border border-pulselink-border text-center">
                   <div>
                     <span className="block text-[10px] text-slate-400">Blood Type Needed</span>
@@ -330,7 +313,6 @@ export default function DonorMobileView() {
                   </div>
                 </div>
 
-                {/* Live Acceptance Countdown Bar */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-[11px] font-bold">
                     <span className="text-slate-400 flex items-center gap-1">
@@ -342,12 +324,11 @@ export default function DonorMobileView() {
                   <div className="w-full h-1.5 rounded-full bg-pulselink-navy overflow-hidden">
                     <div 
                       className="h-full bg-pulselink-amber transition-all duration-1000"
-                      style={{ width: `${(secondsLeft / 60) * 100}%` }}
+                      style={{ width: `${(secondsLeft / 180) * 100}%` }}
                     />
                   </div>
                 </div>
 
-                {/* CTA Action Buttons */}
                 <div className="pt-1">
                   <button
                     onClick={handleAccept}

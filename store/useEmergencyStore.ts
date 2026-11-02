@@ -13,41 +13,46 @@ export interface AlertData {
   status: 'DISPATCHED' | 'ACCEPTED' | 'EN_ROUTE' | 'FULFILLED';
   acceptedDonorId?: string;
   acceptedDonorName?: string;
-  donorName?: string; // Added alias for hospital page compatibility
-  donorEta?: string;  // Added alias for hospital page compatibility
+  donorName?: string; // Hospital page compatibility
+  donorEta?: string;  // Hospital page compatibility
   checkInToken?: string;
   createdAt?: string;
 }
 
 export interface EmergencyStore {
   activeAlert: AlertData | null;
-  fulfillment?: AlertData | null; // Added for backwards compatibility in hospital page
+  fulfillment?: AlertData | null;
   fetchActiveAlert: () => Promise<void>;
   dispatchAlert: (alertData: Omit<AlertData, 'status'>) => Promise<void>;
   acceptAlert: (donorId: string, donorName: string) => Promise<void>;
   verifyQrCode: (token: string) => Promise<boolean>;
   resetStore: () => void;
-  resetState: () => void; // Alias for resetStore
+  resetState: () => void;
 }
 
 export const useEmergencyStore = create<EmergencyStore>((set, get) => ({
   activeAlert: null,
   fulfillment: null,
 
-  // Polls backend to receive live dispatches across devices/portals
+  // Polls backend to sync state across devices with fallback retention
   fetchActiveAlert: async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/emergency/active`);
       if (res.ok) {
         const data = await res.json();
-        if (data && data.status !== 'NONE' && data.alertId) {
-          set({ activeAlert: data, fulfillment: data });
-        } else if (data && data.status === 'NONE') {
-          // Keep local state if backend returns NONE but local activeAlert exists (graceful fallback)
+        if (data && data.status !== 'NONE' && (data.alertId || data.bloodType)) {
+          const formattedAlert: AlertData = {
+            ...data,
+            alertId: data.alertId || 'PL-ALERT-101',
+            hospitalName: data.hospitalName || 'Federal Medical Centre Owerri',
+            status: data.status === 'PENDING' ? 'DISPATCHED' : data.status,
+            checkInToken: data.checkInToken || 'PL-8890',
+          };
+          set({ activeAlert: formattedAlert, fulfillment: formattedAlert });
         }
       }
     } catch (err) {
-      // Retain existing state silently if polling fails
+      console.warn('Backend reachability warning, keeping current local state:', err);
     }
   },
 
@@ -115,6 +120,8 @@ export const useEmergencyStore = create<EmergencyStore>((set, get) => ({
           status: 'ACCEPTED',
           acceptedDonorId: donorId,
           acceptedDonorName: donorName,
+          donorName: donorName,
+          donorEta: '12 Mins',
           checkInToken: responseData.qrCode || current.checkInToken || 'PL-8890',
         };
         set({ activeAlert: updatedAlert, fulfillment: updatedAlert });
@@ -129,6 +136,8 @@ export const useEmergencyStore = create<EmergencyStore>((set, get) => ({
       status: 'ACCEPTED',
       acceptedDonorId: donorId,
       acceptedDonorName: donorName,
+      donorName: donorName,
+      donorEta: '12 Mins',
     };
     set({ activeAlert: updatedAlert, fulfillment: updatedAlert });
   },
