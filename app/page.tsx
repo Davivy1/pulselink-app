@@ -188,7 +188,7 @@ export default function LandingPage() {
       <footer className="border-t border-pulselink-border bg-pulselink-surface/30 py-8 px-6 text-center text-xs text-slate-500">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            © {new Date().getFullYear()} PulseLink. All rights reserved.
+            © 2026 PulseLink. All rights reserved.
           </div>
           <div className="flex items-center gap-6">
             <a href="#hero" className="hover:text-slate-300 transition-colors">Home</a>

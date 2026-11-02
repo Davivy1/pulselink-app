@@ -13,22 +13,26 @@ export interface AlertData {
   status: 'DISPATCHED' | 'ACCEPTED' | 'EN_ROUTE' | 'FULFILLED';
   acceptedDonorId?: string;
   acceptedDonorName?: string;
+  donorName?: string; // Added alias for hospital page compatibility
+  donorEta?: string;  // Added alias for hospital page compatibility
   checkInToken?: string;
   createdAt?: string;
 }
 
-interface EmergencyStore {
+export interface EmergencyStore {
   activeAlert: AlertData | null;
+  fulfillment?: AlertData | null; // Added for backwards compatibility in hospital page
   dispatchAlert: (alertData: Omit<AlertData, 'status'>) => Promise<void>;
   acceptAlert: (donorId: string, donorName: string) => Promise<void>;
   verifyQrCode: (token: string) => Promise<boolean>;
   resetStore: () => void;
+  resetState: () => void; // Alias for resetStore
 }
 
 export const useEmergencyStore = create<EmergencyStore>((set, get) => ({
   activeAlert: null,
+  fulfillment: null,
 
-  // 1. Dispatch Emergency Alert (POST /api/v1/emergency/dispatch)
   dispatchAlert: async (data) => {
     const payload = {
       hospitalId: data.hospitalId || 'H101',
@@ -48,34 +52,30 @@ export const useEmergencyStore = create<EmergencyStore>((set, get) => ({
 
       if (res.ok) {
         const responseData = await res.json();
-        set({
-          activeAlert: responseData.data || {
-            ...payload,
-            alertId: responseData.alertId || `PL-ALERT-${Math.floor(100 + Math.random() * 900)}`,
-            status: 'DISPATCHED',
-            checkInToken: responseData.checkInToken || 'PL-8890',
-            createdAt: new Date().toISOString(),
-          },
-        });
+        const alertObj: AlertData = responseData.data || {
+          ...payload,
+          alertId: responseData.alertId || `PL-ALERT-${Math.floor(100 + Math.random() * 900)}`,
+          status: 'DISPATCHED',
+          checkInToken: responseData.checkInToken || 'PL-8890',
+          createdAt: new Date().toISOString(),
+        };
+        set({ activeAlert: alertObj, fulfillment: alertObj });
         return;
       }
     } catch (error) {
-      console.warn('Backend reachability warning, using local state fallback:', error);
+      console.warn('Backend warning, falling back to local state:', error);
     }
 
-    // Demo Safety Fallback (PRD Section 8)
-    set({
-      activeAlert: {
-        ...payload,
-        alertId: `PL-ALERT-${Math.floor(100 + Math.random() * 900)}`,
-        status: 'DISPATCHED',
-        checkInToken: 'PL-8890',
-        createdAt: new Date().toISOString(),
-      },
-    });
+    const fallbackAlert: AlertData = {
+      ...payload,
+      alertId: `PL-ALERT-${Math.floor(100 + Math.random() * 900)}`,
+      status: 'DISPATCHED',
+      checkInToken: 'PL-8890',
+      createdAt: new Date().toISOString(),
+    };
+    set({ activeAlert: fallbackAlert, fulfillment: fallbackAlert });
   },
 
-  // 2. Accept Alert (POST /api/v1/donor/accept)
   acceptAlert: async (donorId: string, donorName: string) => {
     const current = get().activeAlert;
     if (!current) return;
@@ -92,33 +92,29 @@ export const useEmergencyStore = create<EmergencyStore>((set, get) => ({
 
       if (res.ok) {
         const responseData = await res.json();
-        set({
-          activeAlert: {
-            ...current,
-            status: 'ACCEPTED',
-            acceptedDonorId: donorId,
-            acceptedDonorName: donorName,
-            checkInToken: responseData.qrCode || current.checkInToken || 'PL-8890',
-          },
-        });
+        const updatedAlert: AlertData = {
+          ...current,
+          status: 'ACCEPTED',
+          acceptedDonorId: donorId,
+          acceptedDonorName: donorName,
+          checkInToken: responseData.qrCode || current.checkInToken || 'PL-8890',
+        };
+        set({ activeAlert: updatedAlert, fulfillment: updatedAlert });
         return;
       }
     } catch (error) {
-      console.warn('Backend reachability warning, using local state fallback:', error);
+      console.warn('Backend warning, falling back to local state:', error);
     }
 
-    // Demo Safety Fallback (PRD Section 8)
-    set({
-      activeAlert: {
-        ...current,
-        status: 'ACCEPTED',
-        acceptedDonorId: donorId,
-        acceptedDonorName: donorName,
-      },
-    });
+    const updatedAlert: AlertData = {
+      ...current,
+      status: 'ACCEPTED',
+      acceptedDonorId: donorId,
+      acceptedDonorName: donorName,
+    };
+    set({ activeAlert: updatedAlert, fulfillment: updatedAlert });
   },
 
-  // 3. Verify Check-in QR / Token (POST /api/v1/hospital/verify-qr)
   verifyQrCode: async (token: string) => {
     const current = get().activeAlert;
     if (!current) return false;
@@ -131,30 +127,22 @@ export const useEmergencyStore = create<EmergencyStore>((set, get) => ({
       });
 
       if (res.ok) {
-        set({
-          activeAlert: {
-            ...current,
-            status: 'FULFILLED',
-          },
-        });
+        const fulfilledAlert: AlertData = { ...current, status: 'FULFILLED' };
+        set({ activeAlert: fulfilledAlert, fulfillment: fulfilledAlert });
         return true;
       }
     } catch (error) {
-      console.warn('Backend verification failed, using local state fallback:', error);
+      console.warn('Backend verification failed, using fallback:', error);
     }
 
-    // Demo Safety Fallback (PRD Section 8)
     if (current.checkInToken === token || token === 'PL-8890') {
-      set({
-        activeAlert: {
-          ...current,
-          status: 'FULFILLED',
-        },
-      });
+      const fulfilledAlert: AlertData = { ...current, status: 'FULFILLED' };
+      set({ activeAlert: fulfilledAlert, fulfillment: fulfilledAlert });
       return true;
     }
     return false;
   },
 
-  resetStore: () => set({ activeAlert: null }),
+  resetStore: () => set({ activeAlert: null, fulfillment: null }),
+  resetState: () => set({ activeAlert: null, fulfillment: null }),
 }));

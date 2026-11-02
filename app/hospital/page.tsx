@@ -56,10 +56,8 @@ export default function HospitalCommandCenter() {
   };
 
   // QR Verification Handler
-  const handleVerifyToken = (e: React.FormEvent) => {
-    e.preventDefault();
-    setVerificationError('');
-    const success = verifyQrCode(inputQrToken.trim());
+  const handleVerify = async (token: string) => {
+    const success = await verifyQrCode(token);
     if (success) {
       setVerificationSuccess(true);
       setTimeout(() => {
@@ -432,7 +430,13 @@ export default function HospitalCommandCenter() {
                 <div className="text-xs text-slate-300">Status set to FULFILLED. 100 points awarded to donor.</div>
               </div>
             ) : (
-              <form onSubmit={handleVerifyToken} className="space-y-4">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void handleVerify(inputQrToken);
+                }}
+                className="space-y-4"
+              >
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">Check-In Token / QR Code</label>
                   <input

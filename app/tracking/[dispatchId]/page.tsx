@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
@@ -22,7 +22,7 @@ import {
   Check
 } from 'lucide-react';
 
-export default function LiveTrackingView() {
+function LiveTrackingContent() {
   const params = useParams();
   const router = useRouter();
   const dispatchId = (params?.dispatchId as string) || 'PL-ALERT-101';
@@ -195,10 +195,6 @@ export default function LiveTrackingView() {
               </div>
               <p className="text-xs text-slate-400 mt-0.5">Real-time donor navigation & hospital verification feed</p>
             </div>
-
-            {/*<span className="px-3 py-1 rounded-full bg-pulselink-navy border border-pulselink-border text-pulselink-cyan text-xs font-mono font-bold">
-              #{dispatchId}
-            </span>*/}
           </div>
 
           {/* Timeline Progress Bar */}
@@ -262,7 +258,7 @@ export default function LiveTrackingView() {
           {/* Details Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className={`p-3.5 rounded-xl border ${isDarkMode ? 'bg-pulselink-navy border-pulselink-border' : 'bg-slate-50 border-slate-200'}`}>
-              <span className="block text-[10px] text-slate-400 font-semibold"> Hospital</span>
+              <span className="block text-[10px] text-slate-400 font-semibold">Hospital</span>
               <span className={`text-xs font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                 {activeAlert?.hospitalName || 'Federal Medical Centre Owerri'}
               </span>
@@ -287,10 +283,10 @@ export default function LiveTrackingView() {
                <span className="block text-[10px] text-slate-400 font-semibold">Proximity</span>
                <span className="text-xs font-bold text-pulselink-cyan flex items-center gap-1">
                    <MapPin className="w-3.5 h-3.5" />
-                       {activeAlert?.radiusKm 
+                   {activeAlert?.radiusKm 
                        ? (simulatedDistancesByRadius[activeAlert.radiusKm] || `${activeAlert.radiusKm} km away`)
                        : '3.2 km away'}
-                </span>
+               </span>
             </div>
           </div>
 
@@ -303,7 +299,6 @@ export default function LiveTrackingView() {
                   Clinic Verification Token
                 </h3>
               </div>
-             {/* <span className="text-[10px] font-mono text-slate-400">Section 6 PRD Verified</span>*/}
             </div>
 
             <div className="text-center space-y-2">
@@ -347,5 +342,13 @@ export default function LiveTrackingView() {
       </main>
 
     </div>
+  );
+}
+
+export default function LiveTrackingView() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-pulselink-navy flex items-center justify-center text-white text-sm font-mono">Loading Tracking View...</div>}>
+      <LiveTrackingContent />
+    </Suspense>
   );
 }
