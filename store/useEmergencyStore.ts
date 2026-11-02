@@ -22,6 +22,7 @@ export interface AlertData {
 export interface EmergencyStore {
   activeAlert: AlertData | null;
   fulfillment?: AlertData | null; // Added for backwards compatibility in hospital page
+  fetchActiveAlert: () => Promise<void>;
   dispatchAlert: (alertData: Omit<AlertData, 'status'>) => Promise<void>;
   acceptAlert: (donorId: string, donorName: string) => Promise<void>;
   verifyQrCode: (token: string) => Promise<boolean>;
@@ -32,6 +33,23 @@ export interface EmergencyStore {
 export const useEmergencyStore = create<EmergencyStore>((set, get) => ({
   activeAlert: null,
   fulfillment: null,
+
+  // Polls backend to receive live dispatches across devices/portals
+  fetchActiveAlert: async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/emergency/active`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.status !== 'NONE' && data.alertId) {
+          set({ activeAlert: data, fulfillment: data });
+        } else if (data && data.status === 'NONE') {
+          // Keep local state if backend returns NONE but local activeAlert exists (graceful fallback)
+        }
+      }
+    } catch (err) {
+      // Retain existing state silently if polling fails
+    }
+  },
 
   dispatchAlert: async (data) => {
     const payload = {

@@ -23,7 +23,7 @@ import {
 
 export default function DonorMobileView() {
   const router = useRouter();
-  const { activeAlert, acceptAlert, dispatchAlert } = useEmergencyStore();
+  const { activeAlert, acceptAlert, dispatchAlert, fetchActiveAlert } = useEmergencyStore();
 
   // Local Theme State (Isolated for Donor App)
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -31,6 +31,17 @@ export default function DonorMobileView() {
 
   // Timer State (3 Minute Countdown)
   const [secondsLeft, setSecondsLeft] = useState(60);
+
+  // Poll backend for cross-device/cross-tab dispatch synchronization
+  useEffect(() => {
+    fetchActiveAlert();
+
+    const pollInterval = setInterval(() => {
+      fetchActiveAlert();
+    }, 2500);
+
+    return () => clearInterval(pollInterval);
+  }, [fetchActiveAlert]);
 
   useEffect(() => {
     if (!activeAlert || activeAlert.status !== 'DISPATCHED') return;
@@ -176,203 +187,180 @@ export default function DonorMobileView() {
         </div>
       </header>
 
-      {/* Main Viewport Container */}
-      <main className="grow flex items-center justify-center sm:p-6 p-0">
+      {/* Main Viewport Container (Centered frame on desktop, full height on mobile) */}
+      <main className="min-h-screen sm:min-h-dvh bg-pulselink-navy flex justify-center items-center sm:py-6">
         
-        {/* Responsive Device Frame (Mockup on Desktop, Native Edge-to-Edge on Mobile) */}
-        <div className={`w-full sm:max-w-103 sm:h-185 sm:rounded-[48px] sm:border-10 shadow-none sm:shadow-2xl overflow-hidden relative flex flex-col transition-all duration-300 ${
+        {/* Phone Container */}
+        <div className={`w-full max-w-md min-h-screen sm:min-h-195 sm:max-h-205 shadow-2xl flex flex-col justify-between overflow-hidden relative transition-colors duration-300 ${
           isDarkMode 
-            ? 'bg-pulselink-navy sm:border-slate-800 shadow-slate-950/80 sm:ring-1 sm:ring-slate-700/50' 
-            : 'bg-slate-50 sm:border-slate-300 shadow-slate-400/50 sm:ring-1 sm:ring-slate-300'
+            ? 'bg-pulselink-surface sm:rounded-[36px] sm:border-8 sm:border-slate-800' 
+            : 'bg-slate-50 sm:rounded-[36px] sm:border-8 sm:border-slate-300'
         }`}>
           
-          {/* Dynamic Island / Top Camera Notch (Desktop pitch mode only) */}
-          <div className="hidden sm:flex absolute top-2 left-1/2 -translate-x-1/2 z-50 w-24 h-4 bg-slate-950 rounded-full items-center justify-center gap-2 pointer-events-none shadow-md">
-            <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800" />
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-950/80" />
-          </div>
+          {/* Header */}
+          <header className={`p-4 border-b flex justify-between items-center sticky top-0 z-25 ${isDarkMode ? 'border-pulselink-border bg-pulselink-surface' : 'border-slate-200 bg-white'}`}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-pulselink-navy border border-pulselink-crimson/40 text-white font-extrabold text-xs flex items-center justify-center">
+                JD
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h2 className={`font-bold text-xs ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>John Doe</h2>
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.2 rounded-full bg-pulselink-emerald/15 text-pulselink-emerald text-[10px] font-bold">
+                    <ShieldCheck className="w-3 h-3" />
+                    Tier 2
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400">FUTO Campus</p>
+              </div>
+            </div>
 
-          <div className="hidden sm:block h-6 shrink-0 bg-transparent" />
+            <div className="w-8 h-8 rounded-xl bg-pulselink-crimson/15 border border-pulselink-crimson/30 text-pulselink-crimson font-black text-xs flex items-center justify-center">
+              O-
+            </div>
+          </header>
 
-          {/* Inner Scrollable Phone Screen Body */}
-          <div className="grow flex flex-col overflow-hidden relative">
+          {/* Scrollable Screen Content (Takes up all remaining space tightly) */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             
-            {/* Native Phone Status Header Bar */}
-            <div className={`px-6 py-3 flex items-center justify-between border-b shrink-0 ${isDarkMode ? 'bg-pulselink-surface border-pulselink-border' : 'bg-white border-slate-200'}`}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-pulselink-navy border border-pulselink-crimson/40 text-white font-extrabold text-xs flex items-center justify-center">
-                  JD
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <h2 className={`font-bold text-xs ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>John Doe</h2>
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.2 rounded-full bg-pulselink-emerald/15 text-pulselink-emerald text-[10px] font-bold">
-                      <ShieldCheck className="w-3 h-3" />
-                      Tier 2
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-400">FUTO Campus</p>
-                </div>
+            {/* Donor Status Card */}
+            <div className={`p-4 rounded-2xl border space-y-2.5 ${isDarkMode ? 'bg-pulselink-surface border-pulselink-border' : 'bg-white border-slate-200 shadow-sm'}`}>
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="text-slate-400">Donor Status</span>
+                <span className="text-pulselink-emerald flex items-center gap-1 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-pulselink-emerald animate-pulse"></span>
+                  Ready to Donate
+                </span>
               </div>
 
-              <div className="w-8 h-8 rounded-xl bg-pulselink-crimson/15 border border-pulselink-crimson/30 text-pulselink-crimson font-black text-xs flex items-center justify-center">
-                O-
+              <div className="pt-2 border-t border-pulselink-border/50 flex items-center justify-between text-xs">
+                <span className="text-slate-400">Active Geofence</span>
+                <span className="font-bold flex items-center gap-1 text-pulselink-cyan">
+                  <MapPin className="w-3.5 h-3.5" />
+                  5 km Radius
+                </span>
               </div>
             </div>
 
-            {/* Scrollable Mobile App Body */}
-            <div className="p-4 space-y-3.5 grow overflow-y-auto">
-              
-              {/* Donor Availability & Geofence Card */}
-              <div className={`p-3.5 rounded-2xl border space-y-2.5 ${isDarkMode ? 'bg-pulselink-surface border-pulselink-border' : 'bg-white border-slate-200 shadow-sm'}`}>
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-slate-400">Donor Status</span>
-                  <span className="text-pulselink-emerald flex items-center gap-1 font-bold">
-                    <span className="w-2 h-2 rounded-full bg-pulselink-emerald animate-pulse"></span>
-                    Ready to Donate
-                  </span>
-                </div>
-
-                <div className="pt-2 border-t border-pulselink-border/50 flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Active Geofence</span>
-                  <span className="font-bold flex items-center gap-1 text-pulselink-cyan">
-                    <MapPin className="w-3.5 h-3.5" />
-                    5 km Radius
-                  </span>
-                </div>
-              </div>
-
-              {/* Pitch Demo Trigger Button */}
-              <div className={`p-3.5 rounded-2xl border text-center ${isDarkMode ? 'bg-pulselink-navy/80 border-pulselink-border' : 'bg-slate-200/80 border-slate-300'}`}>
-                <button
-                  onClick={handleSimulateBroadcast}
-                  className="w-full py-2.5 rounded-xl bg-pulselink-surface hover:bg-pulselink-border border border-pulselink-border font-bold text-xs text-pulselink-cyan transition-all cursor-pointer"
-                >
-                  Trigger Emergency Alert
-                </button>
-              </div>
-
-              {/* Campus Impact & Leaderboard Widget */}
-              <div className={`p-3.5 rounded-2xl border space-y-2.5 ${isDarkMode ? 'bg-pulselink-surface border-pulselink-border' : 'bg-white border-slate-200 shadow-sm'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-pulselink-amber" />
-                    <span className={`text-xs font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Campus Leaderboard</span>
-                  </div>
-                  <span className="text-[11px] font-bold text-pulselink-amber bg-pulselink-amber/15 px-2 py-0.5 rounded-full">
-                    #3 Ranking
-                  </span>
-                </div>
-
-                <p className="text-[11px] text-slate-400">Computer Science Department</p>
-
-                <div className="grid grid-cols-2 gap-2.5 pt-1">
-                  <div className={`p-2.5 rounded-xl border text-center ${isDarkMode ? 'bg-pulselink-navy border-pulselink-border' : 'bg-slate-100 border-slate-200'}`}>
-                    <span className="block text-base font-extrabold text-pulselink-crimson">4</span>
-                    <span className="text-[10px] text-slate-400 font-semibold">Lives Saved</span>
-                  </div>
-
-                  <div className={`p-2.5 rounded-xl border text-center ${isDarkMode ? 'bg-pulselink-navy border-pulselink-border' : 'bg-slate-100 border-slate-200'}`}>
-                    <span className="block text-base font-extrabold text-pulselink-emerald">350</span>
-                    <span className="text-[10px] text-slate-400 font-semibold">Impact Points</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mobile Navigation Tabs */}
-              <div className={`flex border-b px-3 pt-2 gap-4 text-xs font-bold ${isDarkMode ? 'bg-pulselink-surface border-pulselink-border' : 'bg-white border-slate-200'}`}>
-                <button 
-                  className="pb-2 border-b-2 border-pulselink-crimson text-pulselink-crimson flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>Emergency Dispatches</span>
-                </button>
-
-                <Link 
-                  href="/donor/impact" 
-                  className={`pb-2 border-b-2 border-transparent hover:border-slate-400 flex items-center gap-1.5 transition-colors ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                  <Trophy className="w-3.5 h-3.5 text-pulselink-amber" />
-                  <span>Campus Impact</span>
-                </Link>
-              </div>
-
+            {/* Emergency Trigger Button */}
+            <div className={`p-4 rounded-2xl border text-center ${isDarkMode ? 'bg-pulselink-navy/80 border-pulselink-border' : 'bg-slate-200/80 border-slate-300'}`}>
+              <button
+                onClick={handleSimulateBroadcast}
+                className="w-full py-2.5 rounded-xl bg-pulselink-surface hover:bg-pulselink-border border border-pulselink-border font-bold text-xs text-pulselink-cyan transition-all cursor-pointer"
+              >
+                Trigger Emergency Alert
+              </button>
             </div>
 
-            {/* Incoming High-Urgency Emergency Alert Modal */}
-            {activeAlert && activeAlert.status === 'DISPATCHED' && (
-              <div className="absolute inset-0 z-50 bg-slate-950/85 backdrop-blur-md p-4 flex flex-col justify-end animate-in slide-in-from-bottom-5">
-                <div className="w-full rounded-3xl bg-pulselink-surface border-2 border-pulselink-crimson p-4 space-y-3.5 shadow-pulse-glow">
-                  
-                  {/* Alert Header */}
-                  <div className="flex items-center justify-between border-b border-pulselink-border pb-2.5">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-pulselink-crimson/20 text-pulselink-crimson text-[10px] font-extrabold uppercase tracking-wider animate-pulse">
-                      <Zap className="w-3.5 h-3.5" />
-                      CRITICAL EMERGENCY MATCH
-                    </span>
-                    <span className="text-[10px] font-bold text-pulselink-amber bg-pulselink-amber/15 px-2 py-0.5 rounded-full">
-                      {activeAlert?.radiusKm 
-                        ? (simulatedDistancesByRadius[activeAlert.radiusKm] || `${activeAlert.radiusKm} km radius`)
-                        : '3.2 km away'}
-                    </span>
-                  </div>
+            {/* Leaderboard Card */}
+            <div className={`p-4 rounded-2xl border space-y-2.5 ${isDarkMode ? 'bg-pulselink-surface border-pulselink-border' : 'bg-white border-slate-200 shadow-sm'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-pulselink-amber" />
+                  <span className={`text-xs font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Campus Leaderboard</span>
+                </div>
+                <span className="text-[11px] font-bold text-pulselink-amber bg-pulselink-amber/15 px-2 py-0.5 rounded-full">
+                  #3 Ranking
+                </span>
+              </div>
 
-                  {/* Hospital Details */}
-                  <div className="space-y-0.5">
-                    <h3 className="text-sm font-extrabold text-white">{activeAlert.hospitalName}</h3>
-                    <p className="text-[11px] text-slate-400">Emergency Surgery Unit • Owerri</p>
-                  </div>
+              <p className="text-[11px] text-slate-400">Computer Science Department</p>
 
-                  {/* Target Match Specs */}
-                  <div className="grid grid-cols-2 gap-2.5 p-2.5 rounded-xl bg-pulselink-navy border border-pulselink-border text-center">
-                    <div>
-                      <span className="block text-[10px] text-slate-400">Blood Type Needed</span>
-                      <span className="text-xs font-black text-pulselink-crimson">{activeAlert.bloodType}</span>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-slate-400">Units Required</span>
-                      <span className="text-xs font-black text-white">{activeAlert.units} Units</span>
-                    </div>
-                  </div>
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
+                <div className={`p-2.5 rounded-xl border text-center ${isDarkMode ? 'bg-pulselink-navy border-pulselink-border' : 'bg-slate-100 border-slate-200'}`}>
+                  <span className="block text-base font-extrabold text-pulselink-crimson">4</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">Lives Saved</span>
+                </div>
 
-                  {/* Live Acceptance Countdown Bar */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] font-bold">
-                      <span className="text-slate-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-pulselink-amber" />
-                        Acceptance Window
-                      </span>
-                      <span className="text-pulselink-amber font-mono font-extrabold">{formatTime(secondsLeft)}</span>
-                    </div>
-                    <div className="w-full h-1.5 rounded-full bg-pulselink-navy overflow-hidden">
-                      <div 
-                        className="h-full bg-pulselink-amber transition-all duration-1000"
-                        style={{ width: `${(secondsLeft / 60) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* CTA Action Buttons */}
-                  <div className="pt-1">
-                    <button
-                      onClick={handleAccept}
-                      className="w-full py-3 rounded-xl bg-pulselink-crimson hover:bg-pulselink-crimson-hover font-bold text-white text-xs shadow-pulse-glow transition-all cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <Zap className="w-4 h-4" />
-                      <span>ACCEPT DISPATCH & NAVIGATE</span>
-                    </button>
-                  </div>
-
+                <div className={`p-2.5 rounded-xl border text-center ${isDarkMode ? 'bg-pulselink-navy border-pulselink-border' : 'bg-slate-100 border-slate-200'}`}>
+                  <span className="block text-base font-extrabold text-pulselink-emerald">350</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">Impact Points</span>
                 </div>
               </div>
-            )}
+            </div>
 
           </div>
 
-          {/* Bottom Home Indicator Gesture Bar (Desktop pitch mockup only) */}
-          <div className="hidden sm:flex h-5 shrink-0 items-center justify-center bg-transparent pointer-events-none">
-            <div className={`w-32 h-1 rounded-full ${isDarkMode ? 'bg-slate-700' : 'bg-slate-300'}`} />
-          </div>
+          {/* Sticky Bottom Tab Bar */}
+          <nav className={`sticky bottom-0 border-t p-3 flex justify-around items-center z-20 ${isDarkMode ? 'bg-pulselink-surface border-pulselink-border' : 'bg-white border-slate-200'}`}>
+            <button className="flex items-center gap-1.5 text-xs font-bold text-pulselink-crimson cursor-pointer">
+              <Zap className="w-4 h-4" />
+              <span>Emergency Dispatches</span>
+            </button>
+
+            <Link href="/donor/impact" className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
+              <Trophy className="w-4 h-4 text-pulselink-amber" />
+              <span>Campus Impact</span>
+            </Link>
+          </nav>
+
+          {/* Incoming High-Urgency Emergency Alert Modal */}
+          {activeAlert && activeAlert.status === 'DISPATCHED' && (
+            <div className="absolute inset-0 z-50 bg-slate-950/85 backdrop-blur-md p-4 flex flex-col justify-end animate-in slide-in-from-bottom-5">
+              <div className="w-full rounded-3xl bg-pulselink-surface border-2 border-pulselink-crimson p-4 space-y-3.5 shadow-pulse-glow">
+                
+                {/* Alert Header */}
+                <div className="flex items-center justify-between border-b border-pulselink-border pb-2.5">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-pulselink-crimson/20 text-pulselink-crimson text-[10px] font-extrabold uppercase tracking-wider animate-pulse">
+                    <Zap className="w-3.5 h-3.5" />
+                    CRITICAL EMERGENCY MATCH
+                  </span>
+                  <span className="text-[10px] font-bold text-pulselink-amber bg-pulselink-amber/15 px-2 py-0.5 rounded-full">
+                    {activeAlert?.radiusKm 
+                      ? (simulatedDistancesByRadius[activeAlert.radiusKm] || `${activeAlert.radiusKm} km radius`)
+                      : '3.2 km away'}
+                  </span>
+                </div>
+
+                {/* Hospital Details */}
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-extrabold text-white">{activeAlert.hospitalName}</h3>
+                  <p className="text-[11px] text-slate-400">Emergency Surgery Unit • Owerri</p>
+                </div>
+
+                {/* Target Match Specs */}
+                <div className="grid grid-cols-2 gap-2.5 p-2.5 rounded-xl bg-pulselink-navy border border-pulselink-border text-center">
+                  <div>
+                    <span className="block text-[10px] text-slate-400">Blood Type Needed</span>
+                    <span className="text-xs font-black text-pulselink-crimson">{activeAlert.bloodType}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-400">Units Required</span>
+                    <span className="text-xs font-black text-white">{activeAlert.units} Units</span>
+                  </div>
+                </div>
+
+                {/* Live Acceptance Countdown Bar */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px] font-bold">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-pulselink-amber" />
+                      Acceptance Window
+                    </span>
+                    <span className="text-pulselink-amber font-mono font-extrabold">{formatTime(secondsLeft)}</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-pulselink-navy overflow-hidden">
+                    <div 
+                      className="h-full bg-pulselink-amber transition-all duration-1000"
+                      style={{ width: `${(secondsLeft / 60) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* CTA Action Buttons */}
+                <div className="pt-1">
+                  <button
+                    onClick={handleAccept}
+                    className="w-full py-3 rounded-xl bg-pulselink-crimson hover:bg-pulselink-crimson-hover font-bold text-white text-xs shadow-pulse-glow transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Zap className="w-4 h-4" />
+                    <span>ACCEPT DISPATCH & NAVIGATE</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
 
         </div>
       </main>
